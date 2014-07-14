@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,115 @@ import com.hadoop.algorithmImpl.AlgorithmImpl;
  */
 
 public class Rsync {
+	/**
+	 * 根据patch和文件名在服务器上生成一个新的文件
+	 * @param patch
+	 * @param fileName
+	 * @throws FileNotFoundException 
+	 */
+	public static void createNewFile(Patch patch, String fileName) throws Exception {
+		File file = new File(fileName);
+		RandomAccessFile src = new RandomAccessFile(fileName, "r");
+		RandomAccessFile dst = new RandomAccessFile("E:\\remote\\temp" + file.getName(), "rw");// the file after complete patch 
+		for(PatchPart part:patch.getPatchParts()){
+			if(part instanceof PatchPartData){
+				PatchPartData patchPartData = (PatchPartData)part;
+				dst.write(patchPartData.getDatas());
+			}else{
+				PatchPartChunk patchPartChunk = (PatchPartChunk)part;
+				src.seek(patchPartChunk.getIndex()*Constant.CHUNK_SIZE);
+				byte[] buffer = new byte[patchPartChunk.getSize()];
+				src.read(buffer);
+				dst.write(buffer);
+			}
+		}
+		if(src != null)
+			src.close();
+		if(dst != null)
+			dst.close();
+	}
+	
+	
+	/**
+	 * 根据文件，创建补丁
+	 * @param checkSums 服务器传的检验和
+	 * @param fileName  文件名
+	 * @param start 开始位置
+	 * @param end   结束位置
+	 * @return
+	 * @throws IOException 
+	 * @throws Exception 
+	 * @throws Exception 
+	 */
+	public static Patch createPatch(Map<Integer, List<Chunk>> checkSums, String fileName, long start, long length) throws Exception {
+		Patch patch = new Patch();
+
+		if(start >= length){
+			return null;
+		}
+	
+		ArrayList<Byte> diffDatas = new ArrayList<Byte>();// put unconsistent data
+		while(start < length){
+			byte[] buffer = readChunk(fileName, start);		
+			PatchPart patchPart = matchCheckSums(checkSums, buffer);// 是否匹配上
+			// is matched
+			if(patchPart != null){
+				if(diffDatas.size() > 0){
+					PatchPartData patchPartData = new PatchPartData();
+					byte[] temp = new byte[diffDatas.size()];
+					for(int i=0; i<diffDatas.size(); i++){
+						temp[i] = diffDatas.get(i);
+					}
+					patchPartData.setDatas(temp);
+					patch.adddPatchPart(patchPartData);// add unconsistent patch
+				}
+				diffDatas.clear();// clear arraylist diffData
+				patch.adddPatchPart(patchPart);    // add consistent patch
+				start = start + buffer.length;
+				if(start >= length){
+					return patch;
+				}
+				continue;
+			}else{// is not matched
+				start = start + 1; // move right one byte
+				if(start >= length){
+					PatchPartData patchPartData = new PatchPartData();
+					byte[] temp = new byte[diffDatas.size() + buffer.length];
+					// put unconsistnt data to temp 
+					for(int i=0; i<diffDatas.size(); i++){
+						temp[i] = diffDatas.get(i);					
+					}
+					System.arraycopy(buffer, 0, temp, diffDatas.size(), buffer.length);
+					patchPartData.setDatas(temp);
+					patch.adddPatchPart(patchPartData);
+					return patch;
+				}
+				diffDatas.add(buffer[0]);
+				continue;
+			}		
+		}	
+		return patch;
+	}
+	
+	//output matched patchPart
+	public static PatchPart matchCheckSums(Map<Integer, List<Chunk>> checkSums, byte[] buffer){
+		
+		int weakCheckSum = calcWeakCheckSum(buffer);
+		if(checkSums.containsKey(weakCheckSum)){
+			List<Chunk> strongCheckSums = checkSums.get(weakCheckSum);
+			String strongCheckSum = calcStrongCheckSum(buffer);
+			for(Chunk chunk:strongCheckSums){
+				if(strongCheckSum.equals(chunk.getStrongCheckSum())){
+					PatchPartChunk patchPartChunk = new PatchPartChunk();
+					patchPartChunk.setIndex(chunk.getIndex());
+					patchPartChunk.setSize(buffer.length);
+					return patchPartChunk;
+				}
+			}
+		}
+		return null;
+	}
+	
 	/**
 	 * 对文件分块，计算每块的弱校验和和强校验和
 	 * @param fileName 文件名
@@ -55,6 +165,7 @@ public class Rsync {
 					chunks.add(chunk);
 					checkSum.put(weakCheckSum, chunks);
 				}
+				
 			}
 			      	
 		} catch (FileNotFoundException e) {
@@ -75,6 +186,27 @@ public class Rsync {
 		return checkSum;
 	}
 	
+	private static byte[] readChunk(String filename, long start) throws IOException {
+		RandomAccessFile raf = new RandomAccessFile(filename, "rw");
+		raf.seek(start);
+		byte[] temp = new byte[Constant.CHUNK_SIZE];
+		int read = raf.read(temp, 0, Constant.CHUNK_SIZE);
+		byte[] buffer = new byte[read];
+		System.arraycopy(temp, 0, buffer, 0, read);
+		if(raf != null)
+			raf.close();
+		
+		return buffer;
+		
+	}
+	
+	// get weakCheckSum
+	private static int calcWeakCheckSum(byte[] datas){
+		
+		AlgorithmImpl algorithmImpl = new AlgorithmImpl();
+		return algorithmImpl.Adler32(datas);
+	}
+	
 	// get weakCheckSum
 	private static int calcWeakCheckSum(byte[] datas, int length){
 		byte[] temp = new byte[length];
@@ -93,5 +225,12 @@ public class Rsync {
 		}
 		AlgorithmImpl algorithmImpl = new AlgorithmImpl();
 		return algorithmImpl.MD5(temp);	
+	}
+	
+	// get strongCheckSum
+	private static String calcStrongCheckSum(byte[] datas){
+	
+		AlgorithmImpl algorithmImpl = new AlgorithmImpl();
+		return algorithmImpl.MD5(datas);	
 	}
 }

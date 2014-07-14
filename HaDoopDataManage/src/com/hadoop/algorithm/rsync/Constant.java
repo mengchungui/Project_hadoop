@@ -5,6 +5,6 @@ package com.hadoop.algorithm.rsync;
  *
  */
 public class Constant {
-	public static final int CHUNK_SIZE = 1024;
+	public static final int CHUNK_SIZE = 1024*1024;
 	
 }

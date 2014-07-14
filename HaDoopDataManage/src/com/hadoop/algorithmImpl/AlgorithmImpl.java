@@ -8,7 +8,8 @@ public class AlgorithmImpl implements Algorithm{
 	
 	public int Adler32(byte dataByte[]){	
 		int A=1, B=0;
-		for(int i=0; i<dataByte.length; i++){
+		int length = dataByte.length;
+		for(int i=0; i<length; i++){
 			A += dataByte[i];
 			B += A;
 		}
