@@ -24,8 +24,7 @@ public class Test {
 		// 3、生成新的文件
 		Rsync.createNewFile(patch, "E:\\remote\\123.txt");
 		long end = System.currentTimeMillis();
-		System.out.print("运行时间: " + (end-start));
-		
+		System.out.print("运行时间: " + (end-start));		
 	}
 }
  

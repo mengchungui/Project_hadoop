@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 import com.hadoop.algorithmImpl.AlgorithmImpl;
 
 /**
@@ -61,8 +62,8 @@ public class Rsync {
 	 */
 	public static Patch createPatch(Map<Integer, List<Chunk>> checkSums, String fileName, long start, long length) throws Exception {
 		Patch patch = new Patch();
-
-		if(start >= length){
+		
+		if( start >= length ){
 			return null;
 		}
 	
@@ -127,7 +128,7 @@ public class Rsync {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * 对文件分块，计算每块的弱校验和和强校验和
 	 * @param fileName 文件名
@@ -186,8 +187,8 @@ public class Rsync {
 		return checkSum;
 	}
 	
-	private static byte[] readChunk(String filename, long start) throws IOException {
-		RandomAccessFile raf = new RandomAccessFile(filename, "rw");
+	private static byte[] readChunk(String filename, long start) throws Exception {
+		RandomAccessFile raf = new RandomAccessFile(new File(filename), "rw");
 		raf.seek(start);
 		byte[] temp = new byte[Constant.CHUNK_SIZE];
 		int read = raf.read(temp, 0, Constant.CHUNK_SIZE);

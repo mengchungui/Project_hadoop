@@ -1,5 +1,6 @@
 package com.hadoop.algorithm.rsync;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -7,7 +8,11 @@ import java.util.ArrayList;
  * @author MCG
  *
  */
-public class Patch {
+public class Patch implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private ArrayList<PatchPart> patchParts = new ArrayList<PatchPart>();
 
 	/**
