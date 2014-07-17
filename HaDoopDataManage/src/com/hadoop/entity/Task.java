@@ -10,6 +10,7 @@ public class Task {
 	private String sourceFilePath;
 	private String filePathString;
 	private long size;
+	private int fileType;// 0:file;1:content
 	
 	
 	public String getFilePathString() {
@@ -29,6 +30,12 @@ public class Task {
 	}
 	public void setSourceFilePath(String sourceFilePath) {
 		this.sourceFilePath = sourceFilePath;
+	}
+	public int getFileType() {
+		return fileType;
+	}
+	public void setFileType(int fileType) {
+		this.fileType = fileType;
 	}
 	
 }

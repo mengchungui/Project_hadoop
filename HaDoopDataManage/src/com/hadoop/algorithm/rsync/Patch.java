@@ -20,7 +20,7 @@ public class Patch implements Serializable{
 	 * 
 	 * @param patchPart
 	 */
-	public void adddPatchPart(PatchPart patchPart){
+	public void addPatchPart(PatchPart patchPart){
 		this.patchParts.add(patchPart);
 	}
 	

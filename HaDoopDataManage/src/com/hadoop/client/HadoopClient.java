@@ -3,6 +3,8 @@ package com.hadoop.client;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -25,6 +27,8 @@ public class HadoopClient {
 	private static String filePath = "E:\\local";
 	private static BlockingQueue<Task> queue = new LinkedBlockingDeque<Task>();
 	private static Account account;
+	private static Map<String, Long> matchDatas = new HashMap<String, Long>();
+	
 	
 	public static void main(String[] args) throws Exception{
 		
@@ -36,10 +40,9 @@ public class HadoopClient {
 		//1、显示主界面
 		showMainMenu();
 		//2、成功登陆后到这里启动监听线程
-		new HadoopClientMonitorThread(queue, filePath).start();
-		
-		//3
-		new HadoopCLientThread(socket, oos, ois, queue, account).start();
+		new HadoopClientMonitorThread(queue, filePath, matchDatas).start();
+		//3、处理消息线程
+		new HadoopCLientThread(socket, oos, ois, queue, account, matchDatas).start();
 	}
 	
 	
@@ -100,6 +103,7 @@ public class HadoopClient {
 				HadoopMessage rMsg = (HadoopMessage)ois.readObject();
 				if(rMsg.getMsgType() == HadoopMessageType.SUCCESS){
 					System.out.println("成功登录");
+					matchDatas = rMsg.getMatchMap();
 					account = acct;
 					break;
 				}else{
@@ -113,6 +117,7 @@ public class HadoopClient {
 				oos.writeObject(msg);
 				HadoopMessage rMsg= (HadoopMessage)ois.readObject();
 				System.out.println(rMsg.getContent());
+				System.exit(1);
 			}else{
 				System.out.println("输入无效");
 			}

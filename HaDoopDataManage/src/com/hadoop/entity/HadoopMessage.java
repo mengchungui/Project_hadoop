@@ -22,11 +22,22 @@ public class HadoopMessage implements Serializable{
 	
 
 	//文件同步
-	private String fileName;
-	private long fileLength;
-	private Map<Integer, List<Chunk>> chunks;
+	private String fileName;// 文件名称
+	private String sourceFileName;//本地的文件名称
+	private long fileLength;// 文件大小
+	private Map<Integer, List<Chunk>> chunks;// 校验和
+	private Map<String, Long> matchMap;// 匹配的文件
 	private Patch patch;
+
 	
+	public Map<String, Long> getMatchMap() {
+		return matchMap;
+	}
+
+	public void setMatchMap(Map<String, Long> matchMap) {
+		this.matchMap = matchMap;
+	}
+
 	public Map<Integer, List<Chunk>> getChunks() {
 		return chunks;
 	}
@@ -48,6 +59,14 @@ public class HadoopMessage implements Serializable{
 
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
+	}
+
+	public String getSourceFileName() {
+		return sourceFileName;
+	}
+
+	public void setSourceFileName(String sourceFileName) {
+		this.sourceFileName = sourceFileName;
 	}
 
 	public long getFileLength() {

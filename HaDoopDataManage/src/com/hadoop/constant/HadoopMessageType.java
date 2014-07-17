@@ -18,4 +18,5 @@ public class HadoopMessageType {
 	public static final int RSYNC_CHECKSUM = 100;
 	public static final int RSYNC_PATCH = 101;
 	public static final int RSYNC_NEW = 102;
+	public static final int RSYNC_DIR = 103;
 }

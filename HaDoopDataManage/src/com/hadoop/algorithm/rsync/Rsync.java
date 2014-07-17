@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 
 import com.hadoop.algorithmImpl.AlgorithmImpl;
 
@@ -28,8 +29,9 @@ public class Rsync {
 	 */
 	public static void createNewFile(Patch patch, String fileName) throws Exception {
 		File file = new File(fileName);
+
 		RandomAccessFile src = new RandomAccessFile(fileName, "r");
-		RandomAccessFile dst = new RandomAccessFile("E:\\remote\\temp" + file.getName(), "rw");// the file after complete patch 
+		RandomAccessFile dst = new RandomAccessFile("temp_" + file.getName(), "rw");// the file after complete patch 
 		for(PatchPart part:patch.getPatchParts()){
 			if(part instanceof PatchPartData){
 				PatchPartData patchPartData = (PatchPartData)part;
@@ -42,6 +44,12 @@ public class Rsync {
 				dst.write(buffer);
 			}
 		}
+		if(file.exists()){
+			file.delete();
+		}
+		File tempFile = new File("temp_" + file.getName());
+		FileUtils.copyFile(tempFile, file);
+	
 		if(src != null)
 			src.close();
 		if(dst != null)
@@ -64,9 +72,16 @@ public class Rsync {
 		Patch patch = new Patch();
 		
 		if( start >= length ){
-			return null;
+			return patch;
 		}
-	
+		//如果checkSums里面为空 直接生成patch传回去
+		if(checkSums.isEmpty()){
+			PatchPartData  patchPartData = new PatchPartData();
+			patchPartData.setDatas(readFile(fileName));
+			patch.addPatchPart(patchPartData);
+			return patch;
+		}
+
 		ArrayList<Byte> diffDatas = new ArrayList<Byte>();// put unconsistent data
 		while(start < length){
 			byte[] buffer = readChunk(fileName, start);		
@@ -80,10 +95,10 @@ public class Rsync {
 						temp[i] = diffDatas.get(i);
 					}
 					patchPartData.setDatas(temp);
-					patch.adddPatchPart(patchPartData);// add unconsistent patch
+					patch.addPatchPart(patchPartData);// add unconsistent patch
 				}
 				diffDatas.clear();// clear arraylist diffData
-				patch.adddPatchPart(patchPart);    // add consistent patch
+				patch.addPatchPart(patchPart);    // add consistent patch
 				start = start + buffer.length;
 				if(start >= length){
 					return patch;
@@ -100,7 +115,7 @@ public class Rsync {
 					}
 					System.arraycopy(buffer, 0, temp, diffDatas.size(), buffer.length);
 					patchPartData.setDatas(temp);
-					patch.adddPatchPart(patchPartData);
+					patch.addPatchPart(patchPartData);
 					return patch;
 				}
 				diffDatas.add(buffer[0]);
@@ -185,6 +200,15 @@ public class Rsync {
 		}
 			
 		return checkSum;
+	}
+	
+	private static byte[] readFile(String fileName) throws Exception{
+		File file = new File(fileName);
+		byte[] buffer = new byte[(int) file.length()];
+		FileInputStream fis = new FileInputStream(fileName);
+		fis.read(buffer);
+		fis.close();
+		return buffer;
 	}
 	
 	private static byte[] readChunk(String filename, long start) throws Exception {
